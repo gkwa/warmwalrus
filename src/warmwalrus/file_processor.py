@@ -1,5 +1,6 @@
 import logging
 import pathlib
+import time
 import typing
 
 import warmwalrus.strategies.base
@@ -16,18 +17,25 @@ class FileProcessor:
         strategies: typing.Optional[
             typing.List[warmwalrus.strategies.base.FileProcessingStrategy]
         ] = None,
+        age_filter: typing.Optional[float] = None,
     ) -> None:
         """
         Initialize the file processor.
 
         Args:
             strategies: List of processing strategies to apply after marker cleanup
+            age_filter: Age filter in seconds (same as used by FileFinder)
         """
         self.strategies = strategies or []
+        self.age_filter = age_filter
 
     def needs_processing(self, file_path: pathlib.Path) -> bool:
         """Check if file needs processing (has markers or strategies would modify it)."""
         try:
+            # First check if file meets age criteria (same logic as FileFinder)
+            if not self._meets_age_criteria(file_path):
+                return False
+
             content: str = file_path.read_text(encoding="utf-8")
 
             # Check if file has markers
@@ -110,3 +118,19 @@ class FileProcessor:
             return content
 
         return "".join(result_lines)
+
+    def _meets_age_criteria(self, file_path: pathlib.Path) -> bool:
+        """Check if file meets age criteria (same logic as FileFinder)."""
+        if self.age_filter is None:
+            return True
+
+        try:
+            file_mtime: float = file_path.stat().st_mtime
+            current_time: float = time.time()
+            age_seconds: float = current_time - file_mtime
+
+            # If file is OLDER than the age limit, skip it
+            return age_seconds <= self.age_filter
+        except OSError:
+            logging.warning(f"Could not check modification time for: {file_path}")
+            return False

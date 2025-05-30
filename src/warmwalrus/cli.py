@@ -127,7 +127,9 @@ class CLIHandler:
 
         # Process files
         processor: warmwalrus.file_processor.FileProcessor = (
-            warmwalrus.file_processor.FileProcessor(strategies=strategies)
+            warmwalrus.file_processor.FileProcessor(
+                strategies=strategies, age_filter=age_filter
+            )
         )
         processed_count: int = 0
 
