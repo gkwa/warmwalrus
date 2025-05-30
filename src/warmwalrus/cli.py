@@ -9,6 +9,7 @@ import warmwalrus.age_parser
 import warmwalrus.file_finder
 import warmwalrus.file_processor
 import warmwalrus.logger
+import warmwalrus.strategies.registry
 
 
 class CLIHandler:
@@ -43,6 +44,13 @@ class CLIHandler:
         )
 
         parser.add_argument(
+            "--strategies",
+            action="append",
+            default=[],
+            help="Apply additional processing strategies (can be used multiple times). Available: newline_padding",
+        )
+
+        parser.add_argument(
             "-v",
             "--verbose",
             action="count",
@@ -61,7 +69,7 @@ class CLIHandler:
         """Handle the cleanmarkers command."""
         logging.info("Starting cleanmarkers command")
         logging.debug(
-            f"Arguments: paths={args.paths}, ext={args.ext}, dry_run={args.dry_run}, excludes={args.exclude}, age={args.age}, verbose={args.verbose}"
+            f"Arguments: paths={args.paths}, ext={args.ext}, dry_run={args.dry_run}, excludes={args.exclude}, age={args.age}, strategies={args.strategies}, verbose={args.verbose}"
         )
 
         # Setup subcommand logging based on verbosity
@@ -80,6 +88,24 @@ class CLIHandler:
             )
             age_filter = age_parser.parse_age(args.age)
             logging.info(f"Age filter: {args.age} ({age_filter} seconds)")
+
+        # Setup strategies
+        strategy_registry = warmwalrus.strategies.registry.StrategyRegistry()
+        strategies = strategy_registry.get_strategies_by_names(args.strategies)
+
+        if args.strategies:
+            logging.info(f"Using strategies: {[s.get_name() for s in strategies]}")
+            if len(strategies) != len(args.strategies):
+                [s.get_name() for s in strategies]
+                missing = [
+                    name
+                    for name in args.strategies
+                    if name not in strategy_registry.list_strategies()
+                ]
+                print(
+                    f"Warning: Unknown strategies ignored: {missing}", file=sys.stderr
+                )
+                logging.warning(f"Unknown strategies ignored: {missing}")
 
         # Find files to process
         file_finder: warmwalrus.file_finder.FileFinder = (
@@ -101,7 +127,7 @@ class CLIHandler:
 
         # Process files
         processor: warmwalrus.file_processor.FileProcessor = (
-            warmwalrus.file_processor.FileProcessor()
+            warmwalrus.file_processor.FileProcessor(strategies=strategies)
         )
         processed_count: int = 0
 

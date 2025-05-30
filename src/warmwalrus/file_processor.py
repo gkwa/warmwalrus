@@ -2,18 +2,44 @@ import logging
 import pathlib
 import typing
 
+import warmwalrus.strategies.base
+
 
 class FileProcessor:
-    """Processes files by removing content between markers."""
+    """Processes files by removing content between markers and applying strategies."""
 
     START_MARKER: str = ".......... START .........."
     END_MARKER: str = ".......... END .........."
 
+    def __init__(
+        self,
+        strategies: typing.Optional[
+            typing.List[warmwalrus.strategies.base.FileProcessingStrategy]
+        ] = None,
+    ) -> None:
+        """
+        Initialize the file processor.
+
+        Args:
+            strategies: List of processing strategies to apply after marker cleanup
+        """
+        self.strategies = strategies or []
+
     def needs_processing(self, file_path: pathlib.Path) -> bool:
-        """Check if file needs processing (has markers)."""
+        """Check if file needs processing (has markers or strategies would modify it)."""
         try:
             content: str = file_path.read_text(encoding="utf-8")
-            return self._has_markers(content)
+
+            # Check if file has markers
+            if self._has_markers(content):
+                return True
+
+            # Check if any strategy would modify the content
+            if self.strategies:
+                processed_content = self._apply_strategies(content, file_path)
+                return processed_content != content
+
+            return False
         except Exception as e:
             logging.error(f"Error reading {file_path}: {e}")
             return False
@@ -22,7 +48,13 @@ class FileProcessor:
         """Process a single file, returning True if changes were made."""
         try:
             original_content: str = file_path.read_text(encoding="utf-8")
+
+            # First, process markers
             processed_content: str = self._process_content(original_content)
+
+            # Then apply strategies
+            if self.strategies:
+                processed_content = self._apply_strategies(processed_content, file_path)
 
             if processed_content != original_content:
                 file_path.write_text(processed_content, encoding="utf-8")
@@ -32,6 +64,14 @@ class FileProcessor:
         except Exception as e:
             logging.error(f"Error processing {file_path}: {e}")
             raise
+
+    def _apply_strategies(self, content: str, file_path: pathlib.Path) -> str:
+        """Apply all configured strategies to the content."""
+        result = content
+        for strategy in self.strategies:
+            logging.debug(f"Applying strategy {strategy.get_name()} to {file_path}")
+            result = strategy.process(result, file_path)
+        return result
 
     def _has_markers(self, content: str) -> bool:
         """Check if content has start or end markers at line beginnings."""
