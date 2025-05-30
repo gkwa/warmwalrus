@@ -8,8 +8,8 @@ import warmwalrus.strategies.base
 class FileProcessor:
     """Processes files by removing content between markers and applying strategies."""
 
-    START_MARKER: str = ".......... START .........."
-    END_MARKER: str = ".......... END .........."
+    START_MARKERS: typing.List[str] = [".......... START ..........", "<response>"]
+    END_MARKERS: typing.List[str] = [".......... END ..........", "</response>"]
 
     def __init__(
         self,
@@ -78,7 +78,8 @@ class FileProcessor:
         lines: typing.List[str] = content.splitlines()
 
         for line in lines:
-            if line.strip() == self.START_MARKER or line.strip() == self.END_MARKER:
+            stripped_line: str = line.strip()
+            if stripped_line in self.START_MARKERS or stripped_line in self.END_MARKERS:
                 return True
 
         return False
@@ -93,11 +94,11 @@ class FileProcessor:
         for line in lines:
             stripped_line: str = line.strip()
 
-            if stripped_line == self.START_MARKER:
+            if stripped_line in self.START_MARKERS:
                 keep_mode = True
                 found_start = True
                 continue
-            elif stripped_line == self.END_MARKER:
+            elif stripped_line in self.END_MARKERS:
                 keep_mode = False
                 continue
 

@@ -6,7 +6,7 @@ import warmwalrus.strategies.base
 class NewlinePaddingStrategy(warmwalrus.strategies.base.FileProcessingStrategy):
     """Strategy to ensure file starts with a specified number of newlines."""
 
-    def __init__(self, newline_count: int = 20) -> None:
+    def __init__(self, newline_count: int = 8) -> None:
         """
         Initialize the strategy.
 
