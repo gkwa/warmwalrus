@@ -1,0 +1,30 @@
+#+TITLE: warmwalrus
+
+A Python CLI tool for cleaning marker delimiters from files.
+
+* Usage
+
+Clean markers from markdown files in current directory:
+#+BEGIN_SRC bash
+warmwalrus cleanmarkers .
+#+END_SRC
+
+Clean markers from Python files with dry run:
+#+BEGIN_SRC bash
+warmwalrus cleanmarkers --ext=py --dry-run /path/to/files
+#+END_SRC
+
+Clean markers from files modified in last 2 hours, excluding git directories:
+#+BEGIN_SRC bash
+warmwalrus cleanmarkers --age=2h --exclude=.git --exclude=node_modules /path/to/project
+#+END_SRC
+
+* Features
+
+- Removes content between =.......... START ..........= and =.......... END ..........= markers
+- Supports multiple file extensions via =--ext= parameter
+- Dry run mode with =--dry-run=
+- Age-based filtering with =--age= parameter
+- Directory exclusion with =--exclude= parameter
+- Verbose logging with =-v= or =--verbose=
+

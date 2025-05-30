@@ -1,0 +1,20 @@
+[project]
+name = "warmwalrus"
+version = "0.1.0"
+description = "CLI tool for cleaning marker delimiters from files"
+readme = "README.org"
+authors = [
+    { name = "Taylor Monacelli", email = "taylormonacelli@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = []
+
+[project.scripts]
+warmwalrus = "warmwalrus:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff.lint]
+extend-select = ["I"]
