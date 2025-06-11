@@ -47,7 +47,13 @@ class CLIHandler:
             "--strategies",
             action="append",
             default=[],
-            help="Apply additional processing strategies (can be used multiple times). Available: newline_padding",
+            help="Apply additional processing strategies (can be used multiple times). Available: newline_padding, claude_url",
+        )
+
+        parser.add_argument(
+            "--no-claude-url",
+            action="store_true",
+            help="Disable the default claude_url strategy",
         )
 
         parser.add_argument(
@@ -69,7 +75,7 @@ class CLIHandler:
         """Handle the cleanmarkers command."""
         logging.info("Starting cleanmarkers command")
         logging.debug(
-            f"Arguments: paths={args.paths}, ext={args.ext}, dry_run={args.dry_run}, excludes={args.exclude}, age={args.age}, strategies={args.strategies}, verbose={args.verbose}"
+            f"Arguments: paths={args.paths}, ext={args.ext}, dry_run={args.dry_run}, excludes={args.exclude}, age={args.age}, strategies={args.strategies}, no_claude_url={args.no_claude_url}, verbose={args.verbose}"
         )
 
         # Setup subcommand logging based on verbosity
@@ -91,12 +97,32 @@ class CLIHandler:
 
         # Setup strategies
         strategy_registry = warmwalrus.strategies.registry.StrategyRegistry()
-        strategies = strategy_registry.get_strategies_by_names(args.strategies)
+
+        # Start with default strategies if no explicit strategies provided
+        if not args.strategies:
+            if not args.no_claude_url:
+                strategies = strategy_registry.get_default_strategies()
+                logging.info("Using default strategies: claude_url")
+            else:
+                strategies = []
+                logging.info("No strategies enabled (default claude_url disabled)")
+        else:
+            # User provided explicit strategies
+            strategies = strategy_registry.get_strategies_by_names(args.strategies)
+
+            # Add default claude_url unless explicitly disabled
+            if not args.no_claude_url and "claude_url" not in args.strategies:
+                claude_url_strategy = strategy_registry.get_strategy("claude_url")
+                if claude_url_strategy:
+                    strategies.insert(0, claude_url_strategy)  # Add at beginning
+                    logging.info("Adding default claude_url strategy")
 
         if args.strategies:
             logging.info(f"Using strategies: {[s.get_name() for s in strategies]}")
-            if len(strategies) != len(args.strategies):
-                [s.get_name() for s in strategies]
+            if len(strategy_registry.get_strategies_by_names(args.strategies)) != len(
+                args.strategies
+            ):
+                strategy_registry.get_strategies_by_names(args.strategies)
                 missing = [
                     name
                     for name in args.strategies
