@@ -2,6 +2,7 @@ import typing
 
 import warmwalrus.strategies.base
 import warmwalrus.strategies.claude_url
+import warmwalrus.strategies.file_renamer
 import warmwalrus.strategies.newline_padding
 
 
@@ -24,12 +25,16 @@ class StrategyRegistry:
             "claude_url",
             warmwalrus.strategies.claude_url.ClaudeUrlStrategy(),
         )
+        self.register_strategy(
+            "file_renamer",
+            warmwalrus.strategies.file_renamer.FileRenamerStrategy(),
+        )
 
     def get_default_strategies(
         self,
     ) -> typing.List[warmwalrus.strategies.base.FileProcessingStrategy]:
         """Get the default strategies that should be applied if none are specified."""
-        return [self.get_strategy("claude_url")]
+        return [self.get_strategy("file_renamer"), self.get_strategy("claude_url")]
 
     def register_strategy(
         self, name: str, strategy: warmwalrus.strategies.base.FileProcessingStrategy

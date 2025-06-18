@@ -42,10 +42,19 @@ class FileProcessor:
             if self._has_markers(content):
                 return True
 
-            # Check if any strategy would modify the content
+            # Check if any strategy would modify the content or rename the file
             if self.strategies:
-                processed_content = self._apply_strategies(content, file_path)
-                return processed_content != content
+                for strategy in self.strategies:
+                    if strategy.is_renaming_strategy():
+                        # For renaming strategies, check if rename would happen
+                        new_path = strategy.rename_file(file_path)
+                        if new_path and new_path != file_path:
+                            return True
+                    else:
+                        # For content strategies, check if content would change
+                        processed_content = strategy.process(content, file_path)
+                        if processed_content != content:
+                            return True
 
             return False
         except Exception as e:
@@ -56,19 +65,32 @@ class FileProcessor:
         """Process a single file, returning True if changes were made."""
         try:
             original_content: str = file_path.read_text(encoding="utf-8")
+            changes_made = False
 
-            # First, process markers
+            # First, apply renaming strategies
+            current_path = file_path
+            for strategy in self.strategies:
+                if strategy.is_renaming_strategy():
+                    new_path = strategy.rename_file(current_path)
+                    if new_path and new_path != current_path:
+                        current_path = new_path
+                        changes_made = True
+
+            # Then, process markers
             processed_content: str = self._process_content(original_content)
 
-            # Then apply strategies
-            if self.strategies:
-                processed_content = self._apply_strategies(processed_content, file_path)
+            # Then apply content strategies
+            for strategy in self.strategies:
+                if not strategy.is_renaming_strategy():
+                    processed_content = strategy.process(
+                        processed_content, current_path
+                    )
 
             if processed_content != original_content:
-                file_path.write_text(processed_content, encoding="utf-8")
-                return True
+                current_path.write_text(processed_content, encoding="utf-8")
+                changes_made = True
 
-            return False
+            return changes_made
         except Exception as e:
             logging.error(f"Error processing {file_path}: {e}")
             raise

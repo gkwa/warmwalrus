@@ -47,7 +47,7 @@ class CLIHandler:
             "--strategies",
             action="append",
             default=[],
-            help="Apply additional processing strategies (can be used multiple times). Available: newline_padding, claude_url",
+            help="Apply additional processing strategies (can be used multiple times). Available: newline_padding, claude_url, file_renamer",
         )
 
         parser.add_argument(
@@ -102,10 +102,13 @@ class CLIHandler:
         if not args.strategies:
             if not args.no_claude_url:
                 strategies = strategy_registry.get_default_strategies()
-                logging.info("Using default strategies: claude_url")
+                logging.info("Using default strategies: file_renamer, claude_url")
             else:
-                strategies = []
-                logging.info("No strategies enabled (default claude_url disabled)")
+                # Only file_renamer when claude_url is disabled
+                strategies = [strategy_registry.get_strategy("file_renamer")]
+                logging.info(
+                    "Using default strategies: file_renamer (claude_url disabled)"
+                )
         else:
             # User provided explicit strategies
             strategies = strategy_registry.get_strategies_by_names(args.strategies)
@@ -157,8 +160,8 @@ class CLIHandler:
                 strategies=strategies, age_filter=age_filter
             )
         )
-        processed_count: int = 0
 
+        processed_count: int = 0
         for file_path in files_to_process:
             try:
                 if args.dry_run:
