@@ -21,3 +21,6 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [{ name = "pathvalidate" }]
+
+[package.metadata.requires-dev]
+dev = []

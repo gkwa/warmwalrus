@@ -5,16 +5,19 @@ A Python CLI tool for cleaning marker delimiters from files.
 ## Usage
 
 Clean markers from markdown files in current directory:
+
 ```bash
 warmwalrus cleanmarkers .
 ```
 
 Clean markers from Python files with dry run:
+
 ```bash
 warmwalrus cleanmarkers --ext=py --dry-run /path/to/files
 ```
 
 Clean markers from files modified in last 2 hours, excluding git directories:
+
 ```bash
 warmwalrus cleanmarkers --age=2h --exclude=.git --exclude=node_modules /path/to/project
 ```
