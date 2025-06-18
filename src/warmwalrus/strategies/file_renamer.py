@@ -3,6 +3,8 @@ import pathlib
 import re
 import typing
 
+import pathvalidate
+
 import warmwalrus.strategies.base
 
 
@@ -132,42 +134,9 @@ class FileRenamerStrategy(warmwalrus.strategies.base.FileProcessingStrategy):
         if not title or not title.strip():
             return ""
 
-        # Remove characters that are problematic in filenames across platforms
-        sanitized = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "", title)
-
-        # Normalize whitespace - replace multiple whitespace chars with single space
-        sanitized = re.sub(r"\s+", " ", sanitized)
-
-        # Remove leading/trailing whitespace
-        sanitized = sanitized.strip()
-
-        # Handle reserved names on Windows
-        reserved_names = {
-            "CON",
-            "PRN",
-            "AUX",
-            "NUL",
-            "COM1",
-            "COM2",
-            "COM3",
-            "COM4",
-            "COM5",
-            "COM6",
-            "COM7",
-            "COM8",
-            "COM9",
-            "LPT1",
-            "LPT2",
-            "LPT3",
-            "LPT4",
-            "LPT5",
-            "LPT6",
-            "LPT7",
-            "LPT8",
-            "LPT9",
-        }
-        if sanitized.upper() in reserved_names:
-            sanitized = f"{sanitized} file"
+        # Use pathvalidate to handle cross-platform filename sanitization
+        # replacement_text=" " preserves spaces instead of using underscores
+        sanitized = pathvalidate.sanitize_filename(title, replacement_text=" ")
 
         # Limit length to reasonable filename length (most filesystems support 255 chars)
         # Leave room for .md extension (3 chars)
@@ -175,8 +144,8 @@ class FileRenamerStrategy(warmwalrus.strategies.base.FileProcessingStrategy):
         if len(sanitized) > max_length:
             sanitized = sanitized[:max_length].rstrip()
 
-        # Ensure we don't end with a period (problematic on Windows)
-        sanitized = sanitized.rstrip(".")
+        # Final cleanup
+        sanitized = sanitized.strip()
 
         # Final check - ensure we still have something left
         if not sanitized:

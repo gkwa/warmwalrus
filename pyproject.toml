@@ -4,11 +4,10 @@ version = "0.1.0"
 description = "CLI tool for cleaning marker delimiters from files"
 readme = "README.md"
 authors = [
-    { name = "Taylor Monacelli", email = "taylormonacelli@gmail.com" }
+   { name = "Taylor Monacelli", email = "taylormonacelli@gmail.com" }
 ]
 requires-python = ">=3.12"
-dependencies = []
-
+dependencies = ["pathvalidate"]
 [project.scripts]
 warmwalrus = "warmwalrus:main"
 
