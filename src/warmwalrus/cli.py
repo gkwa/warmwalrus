@@ -131,9 +131,6 @@ class CLIHandler:
                     for name in args.strategies
                     if name not in strategy_registry.list_strategies()
                 ]
-                print(
-                    f"Warning: Unknown strategies ignored: {missing}", file=sys.stderr
-                )
                 logging.warning(f"Unknown strategies ignored: {missing}")
 
         # Find files to process
@@ -147,8 +144,6 @@ class CLIHandler:
         files_to_process: typing.List[pathlib.Path] = file_finder.find_files(args.paths)
 
         if not files_to_process:
-            if args.verbose > 0:
-                print("No files found to process", file=sys.stderr)
             logging.info("No files found to process")
             return
 
@@ -166,19 +161,17 @@ class CLIHandler:
             try:
                 if args.dry_run:
                     if processor.needs_processing(file_path):
-                        print(f"Would process: {file_path}")
+                        logging.info(f"Would process: {file_path}")
                         processed_count += 1
-                    elif args.verbose > 0:
-                        print(f"Would skip (no markers): {file_path}")
+                    else:
+                        logging.debug(f"Would skip (no markers): {file_path}")
                 else:
                     if processor.process_file(file_path):
-                        if args.verbose > 0:
-                            print(f"Processed: {file_path}")
+                        logging.info(f"Processed: {file_path}")
                         processed_count += 1
-                    elif args.verbose > 0:
-                        print(f"Skipped (no changes): {file_path}")
+                    else:
+                        logging.debug(f"Skipped (no changes): {file_path}")
             except Exception as e:
-                print(f"Error processing {file_path}: {e}", file=sys.stderr)
                 logging.error(f"Error processing {file_path}: {e}")
                 sys.exit(1)
 
