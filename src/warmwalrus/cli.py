@@ -57,6 +57,19 @@ class CLIHandler:
         )
 
         parser.add_argument(
+            "--allow-overwrite",
+            action="store_true",
+            default=True,
+            help="Allow overwriting existing files when renaming (default: True)",
+        )
+
+        parser.add_argument(
+            "--no-overwrite",
+            action="store_true",
+            help="Prevent overwriting existing files when renaming",
+        )
+
+        parser.add_argument(
             "-v",
             "--verbose",
             action="count",
@@ -75,8 +88,12 @@ class CLIHandler:
         """Handle the cleanmarkers command."""
         logging.info("Starting cleanmarkers command")
         logging.debug(
-            f"Arguments: paths={args.paths}, ext={args.ext}, dry_run={args.dry_run}, excludes={args.exclude}, age={args.age}, strategies={args.strategies}, no_claude_url={args.no_claude_url}, verbose={args.verbose}"
+            f"Arguments: paths={args.paths}, ext={args.ext}, dry_run={args.dry_run}, excludes={args.exclude}, age={args.age}, strategies={args.strategies}, no_claude_url={args.no_claude_url}, allow_overwrite={args.allow_overwrite}, no_overwrite={args.no_overwrite}, verbose={args.verbose}"
         )
+
+        # Handle overwrite logic
+        allow_overwrite = args.allow_overwrite and not args.no_overwrite
+        logging.debug(f"Allow overwrite: {allow_overwrite}")
 
         # Setup subcommand logging based on verbosity
         logger_setup = warmwalrus.logger.LoggerSetup()
@@ -119,6 +136,11 @@ class CLIHandler:
                 if claude_url_strategy:
                     strategies.insert(0, claude_url_strategy)  # Add at beginning
                     logging.info("Adding default claude_url strategy")
+
+        # Configure file_renamer strategy with overwrite setting
+        for strategy in strategies:
+            if hasattr(strategy, "set_allow_overwrite"):
+                strategy.set_allow_overwrite(allow_overwrite)
 
         if args.strategies:
             logging.info(f"Using strategies: {[s.get_name() for s in strategies]}")

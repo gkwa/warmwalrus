@@ -16,12 +16,17 @@ class FileRenamerStrategy(warmwalrus.strategies.base.FileProcessingStrategy):
 
     def __init__(self) -> None:
         """Initialize the strategy."""
-        # Pattern to match CLAUDE_THREAD_TITLE line
+        # Pattern to match CLAUDE_THREAD_TITLE line - capture everything until newline or end of string
         self.thread_title_pattern = re.compile(
-            r"CLAUDE_THREAD_TITLE:\s*(.+?)(?:\s*</boilerplate_text>|\s*$)",
+            r"CLAUDE_THREAD_TITLE:\s*(.+?)(?:\n|$)",
             re.IGNORECASE | re.MULTILINE,
         )
         self.logger = logging.getLogger(__name__)
+        self.allow_overwrite = True  # Default to allowing overwrite
+
+    def set_allow_overwrite(self, allow_overwrite: bool) -> None:
+        """Set whether to allow overwriting existing files."""
+        self.allow_overwrite = allow_overwrite
 
     def is_renaming_strategy(self) -> bool:
         """Return True since this strategy renames files."""
@@ -93,10 +98,22 @@ class FileRenamerStrategy(warmwalrus.strategies.base.FileProcessingStrategy):
 
         # Check if target already exists
         if new_path.exists():
-            self.logger.warning(
-                f"Cannot rename {file_path} to {new_path}: target file already exists"
-            )
-            return None
+            if not self.allow_overwrite:
+                self.logger.warning(
+                    f"Cannot rename {file_path} to {new_path}: target file already exists"
+                )
+                return None
+            else:
+                self.logger.info(
+                    f"Target file {new_path} exists but will be overwritten"
+                )
+                # Remove the existing target file
+                try:
+                    new_path.unlink()
+                    self.logger.debug(f"Removed existing file {new_path}")
+                except OSError as e:
+                    self.logger.error(f"Failed to remove existing file {new_path}: {e}")
+                    return None
 
         # Perform the rename
         try:
