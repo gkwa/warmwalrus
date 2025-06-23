@@ -21,8 +21,14 @@ class FileRenamerStrategy(warmwalrus.strategies.base.FileProcessingStrategy):
             r"CLAUDE_THREAD_TITLE:\s*(.+?)(?:\n|$)",
             re.IGNORECASE | re.MULTILINE,
         )
+        # Pattern to match and remove the entire CLAUDE_THREAD_TITLE line
+        self.thread_title_line_pattern = re.compile(
+            r"^CLAUDE_THREAD_TITLE:\s*.+?$",
+            re.IGNORECASE | re.MULTILINE,
+        )
         self.logger = logging.getLogger(__name__)
         self.allow_overwrite = True  # Default to allowing overwrite
+        self.title_used_for_rename = None  # Track which title was used for renaming
 
     def set_allow_overwrite(self, allow_overwrite: bool) -> None:
         """Set whether to allow overwriting existing files."""
@@ -66,6 +72,7 @@ class FileRenamerStrategy(warmwalrus.strategies.base.FileProcessingStrategy):
             title = match.group(1).strip()
             if title != self.TITLE_PLACEHOLDER:
                 actual_title = title
+                self.title_used_for_rename = title  # Store the title used for renaming
                 self.logger.info(
                     f"Found actual CLAUDE_THREAD_TITLE in {file_path}: {title}"
                 )
@@ -126,17 +133,31 @@ class FileRenamerStrategy(warmwalrus.strategies.base.FileProcessingStrategy):
 
     def process(self, content: str, file_path: pathlib.Path) -> str:
         """
-        This method is kept for compatibility but renaming happens via rename_file().
+        Remove CLAUDE_THREAD_TITLE lines from content after renaming is complete.
 
         Args:
-            content: The file content (unused for renaming)
-            file_path: Path to the file being processed (unused)
+            content: The file content to process
+            file_path: Path to the file being processed
 
         Returns:
-            Content unchanged
+            Content with CLAUDE_THREAD_TITLE lines removed
         """
-        # For renaming strategies, the actual work is done in rename_file()
-        return content
+        if not content:
+            return content
+
+        # Remove all CLAUDE_THREAD_TITLE lines from the content
+        processed_content = self.thread_title_line_pattern.sub("", content)
+
+        # Clean up any extra blank lines that might have been left behind
+        # Replace multiple consecutive newlines with at most two newlines
+        processed_content = re.sub(r"\n{3,}", "\n\n", processed_content)
+
+        if processed_content != content:
+            self.logger.info(
+                f"Removed CLAUDE_THREAD_TITLE line(s) from content in {file_path}"
+            )
+
+        return processed_content
 
     def _sanitize_filename(self, title: str) -> str:
         """
