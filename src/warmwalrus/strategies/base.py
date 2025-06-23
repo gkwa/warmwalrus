@@ -32,9 +32,14 @@ class FileProcessingStrategy(abc.ABC):
     def rename_file(self, file_path: pathlib.Path) -> typing.Optional[pathlib.Path]:
         """
         Rename the file if this is a renaming strategy.
+
         Args:
             file_path: Path to the file to potentially rename
         Returns:
             New path if renamed, None if not renamed or not a renaming strategy
         """
         return None
+
+    def set_allow_overwrite(self, allow_overwrite: bool) -> None:
+        """Set whether to allow overwriting existing files. Default implementation does nothing."""
+        pass
